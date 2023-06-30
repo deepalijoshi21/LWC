@@ -1,0 +1,73 @@
+@@@@@@@@@@@@ HTML FILE @@@@@@@@@@@@@
+
+<template>
+    <div class="slds-form-element">
+        <label for="accountLookup" class="slds-form-element__label">Account Lookup</label>
+        <div class="slds-form-element__control">
+            <lightning-input type="search" label="Search Accounts" onchange={handleSearchChange} value={searchTerm}></lightning-input>
+        </div>
+    </div>
+    <template if:true={showResults}>
+        <ul class="slds-listbox slds-listbox_vertical" role="listbox">
+            <template for:each={accounts} for:item="account">
+                <li role="presentation" key={account.Id}>
+                    <a onclick={selectRecord} data-record={account.Id}>{account.Name}</a>
+                </li>
+            </template>
+        </ul>
+    </template>
+</template>
+
+@@@@@@@ JS FILE @@@@@@@@@@@@@@@@@
+
+import { LightningElement, track } from 'lwc';
+import searchAccounts from '@salesforce/apex/AccountLookupController.searchAccounts';
+
+
+export default class AccountLookup extends LightningElement {
+    @track searchTerm = '';
+    @track accounts = [];
+    @track showResults = false;
+    selectedRecord;
+
+    handleSearchChange(event){
+        console.log('@@@@@ handle change called ');
+        this.searchTerm = event.target.value;
+        if(this.searchTerm.length >= 2 ){
+            searchAccounts({searchTerm : this.searchTerm})
+                .then(result =>{
+                    this.accounts = result;
+                    this.showResults = true;
+                })
+                .catch(error =>{
+                    console.error(error);
+                });
+                // .finally(() => { 
+                //     this.searchTerm = this.accounts;
+                // });        
+        }
+        else{
+            this.showResults = false;
+            this.accounts = [];
+        }
+    }
+
+    selectRecord(event) {
+        const selectedRecordId = event.currentTarget.dataset.record;
+        const selectedRecord = this.accounts.find(record => record.Id === selectedRecordId);
+        this.selectedRecord = selectedRecord;
+        this.searchTerm = selectedRecord.Name;
+        this.accounts = [];
+        console.log('Selected Item',event.currentTarget.dataset.record);
+    }
+    
+}
+
+@@@@@@@@@@@@@@@ APEX Controller @@@@@@@@@@@@@@
+
+public with sharing class AccountLookupController {
+    @AuraEnabled(cacheable=true)
+    public static List<Account> searchAccounts(String searchTerm) {
+        return [SELECT Id, Name, Type FROM Account WHERE Name LIKE :(searchTerm +'%') LIMIT 10];
+    }
+}
