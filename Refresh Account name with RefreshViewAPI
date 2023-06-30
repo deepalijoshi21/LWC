@@ -1,0 +1,53 @@
+@@@@@@@@@@@@ HTML FILE @@@@@@@@@@@@@
+
+<template>
+    <lightning-card  title="RefreshView">
+        <div class="sld-var-p-around-medium">
+            <lightning-input type="text" name= "input1" label="Enter Account Name" value="AccountName" lwc:ref="accNameRef"></lightning-input>
+            <lightning-button label="Refresh View" variant="brand" onclick={refreshViewHandler} class="slds-p-around_medium"></lightning-button>
+        </div>
+    </lightning-card>
+</template>
+
+@@@@@@ JS FILE @@@@@@@@@@@@
+
+import { LightningElement, api } from 'lwc';
+import { RefreshEvent } from 'lightning/refresh';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import updateAccountName from '@salesforce/apex/AccountNameRefreshHandler.updateAccountName';
+
+export default class RefreshAccountData extends LightningElement {
+    @api recordId;
+
+    async refreshViewHandler(){
+        let acc = this.refs.accNameRef.value;
+        console.log('Account Input Name == ',acc);
+        await updateAccountName ({Id: this.recordId, Name: acc});
+        this.showToast();
+        this.dispatchEvent(new RefreshEvent());
+        console.log('Event is dispatch');
+    }
+
+    showToast(){
+        const toastEvent = new ShowToastEvent({
+            title: "Success!",
+            message: "Account Name has been updated successfully.",
+            variant: "Success"
+        });
+        this.dispatchEvent(toastEvent);
+        console.log('Show Toast method execute');
+    }
+}
+
+@@@@@@@@ XML-Meta FILE @@@@@@@@@@@@@@@@@@@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<LightningComponentBundle xmlns="http://soap.sforce.com/2006/04/metadata">
+    <apiVersion>57.0</apiVersion>
+    <isExposed>true</isExposed>
+    <targets>
+        <target>lightning__AppPage</target>
+        <target>lightning__HomePage</target>
+        <target>lightning__RecordPage</target>
+    </targets>
+</LightningComponentBundle>
